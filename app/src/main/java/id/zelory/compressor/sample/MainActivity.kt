@@ -5,26 +5,17 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.os.Bundle
-import android.os.Environment
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import id.zelory.compressor.Compressor
-import id.zelory.compressor.constraint.default
-import id.zelory.compressor.constraint.destination
 import id.zelory.compressor.constraint.format
 import id.zelory.compressor.constraint.quality
 import id.zelory.compressor.constraint.resolution
 import id.zelory.compressor.constraint.size
 import id.zelory.compressor.loadBitmap
-import kotlinx.android.synthetic.main.activity_main.actualImageView
-import kotlinx.android.synthetic.main.activity_main.actualSizeTextView
-import kotlinx.android.synthetic.main.activity_main.chooseImageButton
-import kotlinx.android.synthetic.main.activity_main.compressImageButton
-import kotlinx.android.synthetic.main.activity_main.compressedImageView
-import kotlinx.android.synthetic.main.activity_main.compressedSizeTextView
-import kotlinx.android.synthetic.main.activity_main.customCompressImageButton
+import id.zelory.compressor.sample.databinding.ActivityMainBinding
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.IOException
@@ -44,21 +35,23 @@ class MainActivity : AppCompatActivity() {
         private const val PICK_IMAGE_REQUEST = 1
     }
 
+    private lateinit var binding: ActivityMainBinding
     private var actualImage: File? = null
     private var compressedImage: File? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-        actualImageView.setBackgroundColor(getRandomColor())
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        binding.actualImageView.setBackgroundColor(getRandomColor())
         clearImage()
         setupClickListener()
     }
 
     private fun setupClickListener() {
-        chooseImageButton.setOnClickListener { chooseImage() }
-        compressImageButton.setOnClickListener { compressImage() }
-        customCompressImageButton.setOnClickListener { customCompressImage() }
+        binding.chooseImageButton.setOnClickListener { chooseImage() }
+        binding.compressImageButton.setOnClickListener { compressImage() }
+        binding.customCompressImageButton.setOnClickListener { customCompressImage() }
     }
 
     private fun chooseImage() {
@@ -80,15 +73,6 @@ class MainActivity : AppCompatActivity() {
     private fun customCompressImage() {
         actualImage?.let { imageFile ->
             lifecycleScope.launch {
-                // Default compression with custom destination file
-                /*compressedImage = Compressor.compress(this@MainActivity, imageFile) {
-                    default()
-                    getExternalFilesDir(Environment.DIRECTORY_PICTURES)?.also {
-                        val file = File("${it.absolutePath}${File.separator}my_image.${imageFile.extension}")
-                        destination(file)
-                    }
-                }*/
-
                 // Full custom
                 compressedImage = Compressor.compress(this@MainActivity, imageFile) {
                     resolution(1280, 720)
@@ -103,18 +87,18 @@ class MainActivity : AppCompatActivity() {
 
     private fun setCompressedImage() {
         compressedImage?.let {
-            compressedImageView.setImageBitmap(BitmapFactory.decodeFile(it.absolutePath))
-            compressedSizeTextView.text = String.format("Size : %s", getReadableFileSize(it.length()))
+            binding.compressedImageView.setImageBitmap(BitmapFactory.decodeFile(it.absolutePath))
+            binding.compressedSizeTextView.text = String.format("Size : %s", getReadableFileSize(it.length()))
             Toast.makeText(this, "Compressed image save in " + it.path, Toast.LENGTH_LONG).show()
             Log.d("Compressor", "Compressed image save in " + it.path)
         }
     }
 
     private fun clearImage() {
-        actualImageView.setBackgroundColor(getRandomColor())
-        compressedImageView.setImageDrawable(null)
-        compressedImageView.setBackgroundColor(getRandomColor())
-        compressedSizeTextView.text = "Size : -"
+        binding.actualImageView.setBackgroundColor(getRandomColor())
+        binding.compressedImageView.setImageDrawable(null)
+        binding.compressedImageView.setBackgroundColor(getRandomColor())
+        binding.compressedSizeTextView.text = "Size : -"
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -126,8 +110,8 @@ class MainActivity : AppCompatActivity() {
             }
             try {
                 actualImage = FileUtil.from(this, data.data)?.also {
-                    actualImageView.setImageBitmap(loadBitmap(it))
-                    actualSizeTextView.text = String.format("Size : %s", getReadableFileSize(it.length()))
+                    binding.actualImageView.setImageBitmap(loadBitmap(it))
+                    binding.actualSizeTextView.text = String.format("Size : %s", getReadableFileSize(it.length()))
                     clearImage()
                 }
             } catch (e: IOException) {
