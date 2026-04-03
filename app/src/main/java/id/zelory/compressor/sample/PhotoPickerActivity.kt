@@ -13,6 +13,7 @@ import android.widget.Toast
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.lifecycleScope
 import id.zelory.compressor.Compressor
 import id.zelory.compressor.calculateInSampleSize
@@ -20,13 +21,14 @@ import id.zelory.compressor.constraint.format
 import id.zelory.compressor.constraint.quality
 import id.zelory.compressor.constraint.resolution
 import id.zelory.compressor.constraint.size
-import id.zelory.compressor.determineImageRotation
+import id.zelory.compressor.rotateBitmap
 import id.zelory.compressor.sample.databinding.ActivityMainBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
 import java.text.DecimalFormat
 import java.util.Random
 import kotlin.math.log10
@@ -186,6 +188,11 @@ class PhotoPickerActivity : AppCompatActivity() {
         return context.contentResolver.openInputStream(uri)?.use {
             determineImageRotation(it, bitmap)
         } ?: bitmap
+    }
+
+    private fun determineImageRotation(inputStream: InputStream, bitmap: Bitmap): Bitmap {
+        val exif = ExifInterface(inputStream)
+        return rotateBitmap(bitmap, exif)
     }
 
     fun decodeSampledBitmapFromUri(context: Context, uri: Uri, reqWidth: Int, reqHeight: Int): Bitmap {

@@ -8,7 +8,6 @@ import android.net.Uri
 import android.webkit.MimeTypeMap
 import androidx.exifinterface.media.ExifInterface
 import java.io.File
-import java.io.InputStream
 
 /**
  * Created on : January 24, 2020
@@ -81,12 +80,7 @@ fun determineImageRotation(imageFile: File, bitmap: Bitmap): Bitmap {
     return rotateBitmap(bitmap, exif)
 }
 
-fun determineImageRotation(inputStream: InputStream, bitmap: Bitmap): Bitmap {
-    val exif = ExifInterface(inputStream)
-    return rotateBitmap(bitmap, exif)
-}
-
-private fun rotateBitmap(bitmap: Bitmap, exif: ExifInterface): Bitmap {
+fun rotateBitmap(bitmap: Bitmap, exif: ExifInterface): Bitmap {
     val orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 0)
     val matrix = Matrix()
     when (orientation) {
@@ -118,7 +112,7 @@ fun overWrite(imageFile: File, bitmap: Bitmap, format: Bitmap.CompressFormat = i
     val result = if (format == imageFile.compressFormat()) {
         imageFile
     } else {
-        File("${imageFile.absolutePath.substringBeforeLast(".")}.${format.extension()}")
+        File(imageFile.parent, "${imageFile.nameWithoutExtension}.${format.extension()}")
     }
     imageFile.delete()
     saveBitmap(bitmap, result, format, quality)

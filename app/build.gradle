@@ -41,6 +41,7 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.2'
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation project(':compressor')
+    implementation "androidx.exifinterface:exifinterface:1.4.2"
 
     testImplementation 'junit:junit:4.13.2'
 }

@@ -10,6 +10,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
 import org.junit.After
@@ -53,7 +54,7 @@ class UtilTest {
         every { determineImageRotation(any(), any()) } returns mockk()
 
         // When
-        loadBitmap(mockk(relaxed = true))
+        loadBitmap(File("test.jpg"))
 
         // Then
         verify { determineImageRotation(any(), any()) }
@@ -69,7 +70,7 @@ class UtilTest {
         every { calculateInSampleSize(any(), any(), any()) } returns inSampleSize
 
         // When
-        decodeSampledBitmapFromFile(mockk(relaxed = true), 100, 100)
+        decodeSampledBitmapFromFile(File("test.jpg"), 100, 100)
 
         // Then
         verify {
@@ -155,7 +156,8 @@ class UtilTest {
     fun `copy to cache should copy file to right folder`() {
         // Given
         val context = mockk<Context>(relaxed = true)
-        every { context.cacheDir.path } returns "folder/"
+        val cacheDir = File("folder")
+        every { context.cacheDir } returns cacheDir
 
         mockkStatic("kotlin.io.FilesKt__UtilsKt")
         every { any<File>().copyTo(any(), any(), any()) } returns mockk(relaxed = true)
@@ -167,7 +169,7 @@ class UtilTest {
 
         // Then
         verify {
-            source.copyTo(File("folder/compressor/image.jpg"), true, any())
+            source.copyTo(File(cacheDir, "compressor/image.jpg"), true, any())
         }
     }
 
@@ -177,7 +179,7 @@ class UtilTest {
         mockkStatic("id.zelory.compressor.UtilKt")
         every { saveBitmap(any(), any(), any(), any()) } just Runs
 
-        val imageFile = mockk<File>(relaxed = true)
+        val imageFile = File("test.jpg")
         val bitmap = mockk<Bitmap>(relaxed = true)
 
         // When
@@ -185,7 +187,6 @@ class UtilTest {
 
         // Then
         verify {
-            imageFile.delete()
             saveBitmap(bitmap, imageFile, any(), any())
         }
     }

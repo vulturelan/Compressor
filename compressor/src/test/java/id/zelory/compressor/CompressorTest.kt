@@ -21,6 +21,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import java.io.File
 
 /**
  * Created on : January 25, 2020
@@ -36,7 +37,7 @@ class CompressorTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         mockkStatic("id.zelory.compressor.UtilKt")
-        every { copyToCache(any(), any()) } returns mockk(relaxed = true)
+        every { copyToCache(any(), any<File>()) } returns mockk(relaxed = true)
     }
 
     @After
@@ -59,7 +60,7 @@ class CompressorTest {
         }
 
         // When
-        Compressor.compress(mockk(relaxed = true), mockk(relaxed = true), testDispatcher)
+        Compressor.compress(mockk(relaxed = true), mockk<File>(relaxed = true), testDispatcher)
 
         // Then
         verify {
@@ -101,7 +102,7 @@ class CompressorTest {
         }
 
         // When
-        Compressor.compress(mockk(relaxed = true), mockk(relaxed = true), testDispatcher) {
+        Compressor.compress(mockk(relaxed = true), mockk<File>(relaxed = true), testDispatcher) {
             resolution(100, 100)
             quality(75)
             format(Bitmap.CompressFormat.PNG)
