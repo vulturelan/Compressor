@@ -56,65 +56,67 @@ if (secretPropsFile.exists()) {
     ext["sonatypeStagingProfileId"] = System.getenv('SONATYPE_STAGING_PROFILE_ID')
 }
 
-publishing {
-    publications {
-        release(MavenPublication) {
-            groupId PUBLISH_GROUP_ID
-            artifactId PUBLISH_ARTIFACT_ID
-            version PUBLISH_VERSION
-            
-            // Use components.release for Android libraries to handle dependencies automatically
-            if (project.plugins.findPlugin("com.android.library")) {
-                from components.release
-            } else {
-                artifact("$buildDir/libs/${project.getName()}-${version}.jar")
+afterEvaluate {
+    publishing {
+        publications {
+            release(MavenPublication) {
+                groupId PUBLISH_GROUP_ID
+                artifactId PUBLISH_ARTIFACT_ID
+                version PUBLISH_VERSION
+
+                // Use components.release for Android libraries to handle dependencies automatically
+                if (project.plugins.findPlugin("com.android.library")) {
+                    from components.release
+                } else {
+                    artifact("$buildDir/libs/${project.getName()}-${version}.jar")
+                }
+
+                artifact androidSourcesJar
+                artifact javadocJar
+
+                pom {
+                    name = PUBLISH_ARTIFACT_ID
+                    description = 'An android image compressor library'
+                    url = 'https://github.com/zetbaitsu/Compressor'
+                    licenses {
+                        license {
+                            name = 'The Apache Software License, Version 2.0'
+                            url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        }
+                    }
+                    developers {
+                        developer {
+                            id = 'zetbaitsu'
+                            name = 'Zetra'
+                            email = 'zetbaitsu@gmail.com'
+                        }
+                    }
+                    scm {
+                        connection = 'scm:git:github.com/zetbaitsu/Compressor.git'
+                        developerConnection = 'scm:git:ssh://github.com/zetbaitsu/Compressor.git'
+                        url = 'https://github.com/zetbaitsu/Compressor/tree/main'
+                    }
+                }
             }
+        }
+        repositories {
+            maven {
+                name = "sonatype"
 
-            artifact androidSourcesJar
-            artifact javadocJar
+                def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+                def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+                url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
 
-            pom {
-                name = PUBLISH_ARTIFACT_ID
-                description = 'An android image compressor library'
-                url = 'https://github.com/zetbaitsu/Compressor'
-                licenses {
-                    license {
-                        name = 'The Apache Software License, Version 2.0'
-                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                    }
-                }
-                developers {
-                    developer {
-                        id = 'zetbaitsu'
-                        name = 'Zetra'
-                        email = 'zetbaitsu@gmail.com'
-                    }
-                }
-                scm {
-                    connection = 'scm:git:github.com/zetbaitsu/Compressor.git'
-                    developerConnection = 'scm:git:ssh://github.com/zetbaitsu/Compressor.git'
-                    url = 'https://github.com/zetbaitsu/Compressor/tree/main'
+                credentials {
+                    username ossrhUsername
+                    password ossrhPassword
                 }
             }
         }
     }
-    repositories {
-        maven {
-            name = "sonatype"
 
-            def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
-            def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
-            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
-
-            credentials {
-                username ossrhUsername
-                password ossrhPassword
-            }
-        }
+    signing {
+        required { project.hasProperty('signing.keyId') && ext["signing.keyId"] != '' }
+        sign publishing.publications
     }
-}
-
-signing {
-    required { project.hasProperty('signing.keyId') && ext["signing.keyId"] != '' }
-    sign publishing.publications
 }
