@@ -29,7 +29,7 @@ artifacts {
     archives javadocJar
 }
 
-
+// JitPack sets the version to the tag name. We should respect it.
 group = PUBLISH_GROUP_ID
 version = PUBLISH_VERSION
 
@@ -60,15 +60,14 @@ afterEvaluate {
     publishing {
         publications {
             release(MavenPublication) {
-                groupId PUBLISH_GROUP_ID
-                artifactId PUBLISH_ARTIFACT_ID
-                version PUBLISH_VERSION
+                groupId = PUBLISH_GROUP_ID
+                artifactId = PUBLISH_ARTIFACT_ID
+                version = PUBLISH_VERSION
 
-                // Use components.release for Android libraries to handle dependencies automatically
                 if (project.plugins.findPlugin("com.android.library")) {
                     from components.release
                 } else {
-                    artifact("$buildDir/libs/${project.getName()}-${version}.jar")
+                    from components.java
                 }
 
                 artifact androidSourcesJar
@@ -77,7 +76,7 @@ afterEvaluate {
                 pom {
                     name = PUBLISH_ARTIFACT_ID
                     description = 'An android image compressor library'
-                    url = 'https://github.com/zetbaitsu/Compressor'
+                    url = 'https://github.com/vulturelan/Compressor'
                     licenses {
                         license {
                             name = 'The Apache Software License, Version 2.0'
@@ -86,15 +85,14 @@ afterEvaluate {
                     }
                     developers {
                         developer {
-                            id = 'zetbaitsu'
-                            name = 'Zetra'
-                            email = 'zetbaitsu@gmail.com'
+                            id = 'vulturelan'
+                            name = 'vulturelan'
                         }
                     }
                     scm {
-                        connection = 'scm:git:github.com/zetbaitsu/Compressor.git'
-                        developerConnection = 'scm:git:ssh://github.com/zetbaitsu/Compressor.git'
-                        url = 'https://github.com/zetbaitsu/Compressor/tree/main'
+                        connection = 'scm:git:github.com/vulturelan/Compressor.git'
+                        developerConnection = 'scm:git:ssh://github.com/vulturelan/Compressor.git'
+                        url = 'https://github.com/vulturelan/Compressor/tree/main'
                     }
                 }
             }
@@ -102,11 +100,9 @@ afterEvaluate {
         repositories {
             maven {
                 name = "sonatype"
-
                 def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
                 def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
                 url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
-
                 credentials {
                     username ossrhUsername
                     password ossrhPassword
@@ -116,7 +112,10 @@ afterEvaluate {
     }
 
     signing {
-        required { project.hasProperty('signing.keyId') && ext["signing.keyId"] != '' }
-        sign publishing.publications
+        def canSign = project.hasProperty('signing.keyId') && project.findProperty('signing.keyId') != ''
+        required { canSign && !version.endsWith('SNAPSHOT') }
+        if (canSign) {
+            sign publishing.publications
+        }
     }
 }

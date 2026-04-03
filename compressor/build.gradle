@@ -3,7 +3,8 @@ apply plugin: 'kotlin-android'
 
 ext {
     PUBLISH_GROUP_ID = 'com.github.vulturelan'
-    PUBLISH_VERSION = System.getenv("VERSION") ?: '1.0.0'
+    // Use the version provided by JitPack/system env, or fallback to project version
+    PUBLISH_VERSION = System.getenv("VERSION") ?: (project.hasProperty('version') && project.version != 'unspecified' ? project.version : '1.0.0')
     PUBLISH_ARTIFACT_ID = 'compressor'
 }
 
