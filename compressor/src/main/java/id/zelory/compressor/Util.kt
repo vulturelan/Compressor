@@ -4,9 +4,11 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
-import android.media.ExifInterface
+import android.net.Uri
+import android.webkit.MimeTypeMap
+import androidx.exifinterface.media.ExifInterface
 import java.io.File
-import java.io.FileOutputStream
+import java.io.InputStream
 
 /**
  * Created on : January 24, 2020
@@ -14,11 +16,12 @@ import java.io.FileOutputStream
  * Name       : Zetra
  * GitHub     : https://github.com/zetbaitsu
  */
-private val separator = File.separator
 
-private fun cachePath(context: Context) = "${context.cacheDir.path}${separator}compressor$separator"
+private fun getCacheDir(context: Context): File {
+    return File(context.cacheDir, "compressor").apply { mkdirs() }
+}
 
-fun File.compressFormat() = when (extension.toLowerCase()) {
+fun File.compressFormat() = when (extension.lowercase()) {
     "png" -> Bitmap.CompressFormat.PNG
     "webp" -> Bitmap.CompressFormat.WEBP
     else -> Bitmap.CompressFormat.JPEG
@@ -30,7 +33,7 @@ fun Bitmap.CompressFormat.extension() = when (this) {
     else -> "jpg"
 }
 
-fun loadBitmap(imageFile: File) = BitmapFactory.decodeFile(imageFile.absolutePath).run {
+fun loadBitmap(imageFile: File): Bitmap = BitmapFactory.decodeFile(imageFile.absolutePath).run {
     determineImageRotation(imageFile, this)
 }
 
@@ -75,6 +78,15 @@ fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeig
 
 fun determineImageRotation(imageFile: File, bitmap: Bitmap): Bitmap {
     val exif = ExifInterface(imageFile.absolutePath)
+    return rotateBitmap(bitmap, exif)
+}
+
+fun determineImageRotation(inputStream: InputStream, bitmap: Bitmap): Bitmap {
+    val exif = ExifInterface(inputStream)
+    return rotateBitmap(bitmap, exif)
+}
+
+private fun rotateBitmap(bitmap: Bitmap, exif: ExifInterface): Bitmap {
     val orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 0)
     val matrix = Matrix()
     when (orientation) {
@@ -86,7 +98,20 @@ fun determineImageRotation(imageFile: File, bitmap: Bitmap): Bitmap {
 }
 
 internal fun copyToCache(context: Context, imageFile: File): File {
-    return imageFile.copyTo(File("${cachePath(context)}${imageFile.name}"), true)
+    val targetFile = File(getCacheDir(context), imageFile.name)
+    val result = imageFile.copyTo(targetFile, true)
+    return result
+}
+
+internal fun copyToCache(context: Context, uri: Uri): File {
+    val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(context.contentResolver.getType(uri)) ?: ""
+    val targetFile = File(getCacheDir(context), "${uri.lastPathSegment}.$extension")
+    context.contentResolver.openInputStream(uri)?.use { inputStream ->
+        targetFile.outputStream().use { outputStream ->
+            inputStream.copyTo(outputStream)
+        }
+    }
+    return targetFile
 }
 
 fun overWrite(imageFile: File, bitmap: Bitmap, format: Bitmap.CompressFormat = imageFile.compressFormat(), quality: Int = 100): File {
@@ -102,14 +127,8 @@ fun overWrite(imageFile: File, bitmap: Bitmap, format: Bitmap.CompressFormat = i
 
 fun saveBitmap(bitmap: Bitmap, destination: File, format: Bitmap.CompressFormat = destination.compressFormat(), quality: Int = 100) {
     destination.parentFile?.mkdirs()
-    var fileOutputStream: FileOutputStream? = null
-    try {
-        fileOutputStream = FileOutputStream(destination.absolutePath)
-        bitmap.compress(format, quality, fileOutputStream)
-    } finally {
-        fileOutputStream?.run {
-            flush()
-            close()
-        }
+    destination.outputStream().use { outputStream ->
+        bitmap.compress(format, quality, outputStream)
+        outputStream.flush()
     }
 }
